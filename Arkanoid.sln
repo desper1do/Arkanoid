@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решен
 	ProjectSection(SolutionItems) = preProject
 		README.txt = README.txt
 		Изменения в version2.txt = Изменения в version2.txt
+		Изменения в version3.txt = Изменения в version3.txt
+		Как играть.txt = Как играть.txt
 	EndProjectSection
 EndProject
 Global

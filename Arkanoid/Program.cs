@@ -1,14 +1,22 @@
 ﻿using System;
-using System.IO;
 using System.Windows.Forms;
+using Arkanoid.Controllers;
+using Arkanoid.Views;
 
-public static class Program
+namespace Arkanoid
 {
-    [STAThread]
-    public static void Main()
+    public static class Program
     {
-        Application.EnableVisualStyles();
-        Application.SetCompatibleTextRenderingDefault(false);
-        Application.Run(new MainMenuForm());
+        [STAThread]
+        public static void Main()
+        {
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+
+            var mainMenuView = new Views.MainMenuView();
+            var mainMenuController = new Controllers.MainMenuController(mainMenuView);
+            Application.Run(mainMenuView);
+        }
     }
 }
+
