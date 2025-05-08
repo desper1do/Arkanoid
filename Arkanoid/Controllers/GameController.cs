@@ -14,9 +14,18 @@ namespace Arkanoid.Controllers
         private readonly GameView _view;
         private readonly GameModel _model;
         private readonly Timer _timer;
-        private readonly SoundPlayer _bounceSound;
-        private readonly SoundPlayer _breakSound;
-        private readonly SoundPlayer _gameOverSound;
+
+        private readonly SoundPlayer _absoluteWinSound;
+        private readonly SoundPlayer _blockSound;
+        private readonly SoundPlayer _winSound;
+        private readonly SoundPlayer _cheatActivatedSound;
+        private readonly SoundPlayer _loseSound;
+        private readonly SoundPlayer _minusLifeSound;
+        private readonly SoundPlayer _platformSound;
+        private readonly SoundPlayer _wallSound;
+
+        private readonly List<SoundPlayer> _activeSounds = new List<SoundPlayer>();
+
         private const string CHEAT_CODE = "end";
         private string _cheatBuffer = "";
         private DateTime _lastKeyTime = DateTime.MinValue;
@@ -24,24 +33,32 @@ namespace Arkanoid.Controllers
         private bool _isPaused = false;
         private bool _ballLaunched = false;
         private bool _disposed = false;
-        private int _paddleDirection = 0; // -1 влево, 1 вправо, 0 — стоим
+        private readonly bool _isEndless;
+        private int _paddleDirection = 0;
 
         public bool IsLevelCompleted { get; private set; }
 
-        public GameController(GameView view, int level)
+        public GameController(GameView view, GameModel model, int level, bool isEndless = false)
         {
             _view = view;
-            _model = new GameModel(view.ClientSize.Width, view.ClientSize.Height, level);
+            _model = model;
             _view.SetModel(_model);
             _currentLevel = level;
+            _isEndless = isEndless;
 
             _timer = new Timer { Interval = 16 };
             _timer.Tick += UpdateGame;
             _timer.Start();
 
-            _bounceSound = new SoundPlayer(Path.Combine("sounds", "bounce.wav"));
-            _breakSound = new SoundPlayer(Path.Combine("sounds", "break.wav"));
-            _gameOverSound = new SoundPlayer(Path.Combine("sounds", "game_over.wav"));
+            _absoluteWinSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "absolute_win.wav"));
+            _blockSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "block.wav"));
+            _winSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "win.wav"));
+            _cheatActivatedSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "cheat_activeted.wav"));
+            _loseSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "lose.wav"));
+            _minusLifeSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "minus_life.wav"));
+            _platformSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "platform.wav"));
+            _wallSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "wall.wav"));
+            _cheatActivatedSound = new SoundPlayer(Path.Combine(Application.StartupPath, "Resources", "Sounds", "cheat_activeted.wav"));
 
             _view.CheatCodeEntered += OnCheatCodeEntered;
             _view.RestartRequested += OnRestartRequested;
@@ -49,11 +66,19 @@ namespace Arkanoid.Controllers
             _view.KeyDown += OnKeyDown;
             _view.KeyUp += OnKeyUp;
             _model.LifeLost += OnLifeLost;
+
+            _view.ViewClosedExternally += () =>
+            {
+                _timer.Stop();
+                Dispose();
+            };
         }
 
         private void OnLifeLost()
         {
-            _ballLaunched = false;  
+            _ballLaunched = false;
+
+            _minusLifeSound.Play();
 
             _model.Ball.SetVelocity(0, -5);
         }
@@ -71,9 +96,10 @@ namespace Arkanoid.Controllers
                 if (disposing)
                 {
                     _timer?.Dispose();
-                    _bounceSound?.Dispose();
-                    _breakSound?.Dispose();
-                    _gameOverSound?.Dispose();
+                    _platformSound?.Dispose();
+                    _blockSound?.Dispose();
+                    _loseSound?.Dispose();
+                    _cheatActivatedSound?.Dispose();
 
                     if (_model != null)
                     {
@@ -116,9 +142,22 @@ namespace Arkanoid.Controllers
 
         private void PlayBreakSound()
         {
-            var sound = new SoundPlayer(Path.Combine("sounds", "break.wav"));
+            PlaySound(_blockSound);
+            _soundQueue.Enqueue(_blockSound);
+        }
+
+        private void PlaySound(SoundPlayer sound)
+        {
+            _activeSounds.RemoveAll(s =>
+            {
+                bool isPlaying = s.IsLoadCompleted;
+                if (!isPlaying) s.Dispose();
+                return isPlaying;
+            });
+
+            sound.LoadAsync();
             sound.Play();
-            _soundQueue.Enqueue(sound);
+            _activeSounds.Add(sound);
         }
 
         private void UpdateGame(object sender, EventArgs e)
@@ -148,11 +187,17 @@ namespace Arkanoid.Controllers
 
             _model.CheckCollisions();
 
+            if (_model.Ball.HitWall)
+            {
+                PlaySound(_wallSound);
+            }
+
             if (_model.IsGameOver || _model.Lives == 0)
             {
                 _timer.Stop();
-                _gameOverSound.Play();
-                MessageBox.Show("Игра окончена! Счет: " + _model.Score);
+                _loseSound.Play();
+                var gameOverView = new MessageView("GAME OVER", $"YOUR SCORE: {_model.Score}", Color.Red);
+                gameOverView.ShowDialog();
                 _view.Close();
                 return;
             }
@@ -173,19 +218,30 @@ namespace Arkanoid.Controllers
                 IsLevelCompleted = true;
                 _timer.Stop();
 
+                if (_isEndless)
+                {
+                    _model.GenerateRandomBlocks();
+                    _view.SetCheatActivated(false);
+                    _ballLaunched = false;
+                    _timer.Start();
+                    return;
+                }
+
                 if (_currentLevel == 5)
                 {
-                    MessageBox.Show($"Поздравляем! Вы полностью прошли игру!",
-                                  "Игра пройдена",
-                                  MessageBoxButtons.OK,
-                                  MessageBoxIcon.Information);
+                    _absoluteWinSound.Play();
+                    var winView = new MessageView("VICTORY!",
+                        "CONGRATULATIONS!\nYOU BEAT THE GAME!",
+                        Color.Green);
+                    winView.ShowDialog();
+                    _absoluteWinSound.Stop();
                 }
                 else
                 {
-                    MessageBox.Show($"Уровень {_currentLevel} пройден!",
-                                  "Успех",
-                                  MessageBoxButtons.OK,
-                                  MessageBoxIcon.Information);
+                    _winSound.Play();
+                    var levelCompleteView = new MessageView("LEVEL COMPLETE", $"LEVEL {_currentLevel} CLEARED!", Color.Blue);
+                    levelCompleteView.ShowDialog();
+                    _winSound.Stop();
                 }
 
                 _view.Close();
@@ -195,7 +251,7 @@ namespace Arkanoid.Controllers
 
             if (_model.Ball.Bounds.IntersectsWith(_model.Paddle.Bounds))
             {
-                _bounceSound.Play();
+                PlaySound(_platformSound);
                 _model.Ball.BounceFromPaddle(_model.Paddle.Bounds);
             }
 
@@ -222,6 +278,7 @@ namespace Arkanoid.Controllers
             {
                 _model.ActivateCheat();
                 _view.SetCheatActivated(true);
+                PlaySound(_cheatActivatedSound);
                 _view.Invalidate();
             }
         }

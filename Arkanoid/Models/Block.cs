@@ -4,7 +4,8 @@ namespace Arkanoid.Models
 {
     public class Block
     {
-        public Rectangle Bounds { get; private set; }
+        public Rectangle Bounds { get; set; }
+
         public bool IsDestroyed { get; set; }
         public Color Color { get; private set; }
 

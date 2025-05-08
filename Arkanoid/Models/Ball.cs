@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Drawing;
 
 namespace Arkanoid.Models
@@ -10,6 +9,7 @@ namespace Arkanoid.Models
         private PointF _velocity;
         public int formWidth;
         public int formHeight;
+        public bool HitWall { get; private set; }
         private const float Speed = 5f;
         private const float MaxBounceAngle = 75f;
 
@@ -45,6 +45,8 @@ namespace Arkanoid.Models
 
         public void Move()
         {
+            HitWall = false;
+
             float newX = Bounds.X + _velocity.X;
             float newY = Bounds.Y + _velocity.Y;
 
@@ -53,6 +55,7 @@ namespace Arkanoid.Models
                 _velocity.X = -_velocity.X;
                 NormalizeVelocity();
                 newX = Bounds.X + _velocity.X;
+                HitWall = true;
             }
 
             if (newY <= 0)
@@ -60,6 +63,7 @@ namespace Arkanoid.Models
                 _velocity.Y = -_velocity.Y;
                 NormalizeVelocity();
                 newY = Bounds.Y + _velocity.Y;
+                HitWall = true;
             }
 
             Bounds = new Rectangle((int)newX, (int)newY, Bounds.Width, Bounds.Height);

@@ -12,36 +12,35 @@ namespace Arkanoid.Views
         public LevelSelectionView(int unlockedLevels)
         {
             FormBorderStyle = FormBorderStyle.FixedSingle;
-            Text = "Выбор уровня";
+            MaximizeBox = false;
+            this.ControlBox = false;
+            Text = "SELECT LEVEL";
             StartPosition = FormStartPosition.CenterScreen;
-
-            CreateLevelButtons(unlockedLevels);
+            MaximizeBox = false;
+            BackColor = Color.Black;
+            InitializeComponents(unlockedLevels);
         }
 
-        private void CreateLevelButtons(int unlockedLevels)
+        private void InitializeComponents(int unlockedLevels)
         {
             const int btnWidth = 120;
-            const int btnHeight = 50;
+            const int btnHeight = 40;
             const int margin = 20;
 
             for (int i = 1; i <= 5; i++)
             {
                 var btn = new Button
                 {
-                    Text = $"Уровень {i}",
+                    Text = $"LEVEL {i}",
                     Tag = i,
                     Size = new Size(btnWidth, btnHeight),
                     Location = new Point(margin, margin + (i - 1) * (btnHeight + 10)),
-                    Font = new Font("Arial", 12),
-                    BackColor = i <= unlockedLevels ? Color.LightGreen : Color.LightGray,
-                    Enabled = i <= unlockedLevels
+                    Font = new Font(FontManager.PressStartFont.FontFamily, 9f),
+                    BackColor = i <= unlockedLevels ? Color.Lime : Color.Gray,
+                    ForeColor = Color.Black,
+                    Enabled = i <= unlockedLevels,
+                    Padding = new Padding(0, 7, 0, 0)
                 };
-
-                if (!btn.Enabled)
-                {
-                    btn.Text += Environment.NewLine + "(недоступно)";
-                }
-
                 btn.Click += (s, e) => LevelSelected?.Invoke((int)btn.Tag);
 
                 Controls.Add(btn);
@@ -49,10 +48,13 @@ namespace Arkanoid.Views
 
             var backBtn = new Button
             {
-                Text = "Назад",
+                Text = "BACK",
                 Size = new Size(btnWidth, btnHeight),
                 Location = new Point(margin, margin + 5 * (btnHeight + 10)),
-                Font = new Font("Arial", 12)
+                Font = new Font(FontManager.PressStartFont.FontFamily, 9f),
+                BackColor = Color.Magenta,
+                ForeColor = Color.Black,
+                Padding = new Padding(0, 7, 0, 0)
             };
             backBtn.Click += (s, e) => BackClicked?.Invoke();
 
