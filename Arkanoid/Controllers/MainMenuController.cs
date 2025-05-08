@@ -31,10 +31,10 @@ namespace Arkanoid.Controllers
             _buttonClickSound.Play();
             _view.Hide();
 
-            var model = new GameModel(500, 500, 1, true); // бесконечный режим
-            var gameView = new GameView(-1); // без номера уровня
+            var model = new GameModel(500, 500, 1, true);
+            var gameView = new GameView(-1);
             gameView.SetModel(model);
-            var gameController = new GameController(gameView, model, 1, true); // передаём флаг
+            var gameController = new GameController(gameView, model, 1, true);
 
             gameView.FormClosed += (s, args) =>
             {
