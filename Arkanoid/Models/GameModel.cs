@@ -159,12 +159,12 @@ namespace Arkanoid.Models
 
             var blockColors = new List<Color>
             {
-                Color.Cyan,       // Циан
-                Color.Magenta,    // Пурпурный
-                Color.Yellow,     // Желтый
-                Color.Red,        // Красный
-                Color.Blue,       // Синий
-                Color.Green       // Зеленый
+                Color.Cyan,
+                Color.Magenta,
+                Color.Yellow,
+                Color.Red,
+                Color.Blue,
+                Color.Green
             };
 
             var allPositions = new List<Tuple<int, int>>();
